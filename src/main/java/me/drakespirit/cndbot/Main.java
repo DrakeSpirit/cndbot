@@ -1,14 +1,10 @@
 package me.drakespirit.cndbot;
 
-import discord4j.core.DiscordClientBuilder;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.lifecycle.ReadyEvent;
-import discord4j.core.event.domain.message.MessageCreateEvent;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
+import me.drakespirit.cndbot.discord.DiscordBot;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Properties;
 
 public class Main {
@@ -17,30 +13,13 @@ public class Main {
     
     public static void main(String[] args) {
         Properties discordProperties = loadDiscordProperties();
-        GatewayDiscordClient client = loginToDiscord(discordProperties);
-        if (client == null) {
-            System.err.println("Unable to log in.");
-            return;
-        }
-        
-        client.getEventDispatcher().on(ReadyEvent.class)
-                .subscribe(event -> {
-                    User self = event.getSelf();
-                    System.out.println("Logged in as " + self.getUsername() + "#" + self.getDiscriminator());
-                });
-        
-        client.getEventDispatcher().on(MessageCreateEvent.class)
-                .map(MessageCreateEvent::getMessage)
-                .filter(message -> message.getAuthor().map(user -> !user.isBot()).orElse(false))
-                .filter(message -> message.getContent().equalsIgnoreCase("!ping"))
-                .flatMap(Message::getChannel)
-                .flatMap(channel -> channel.createMessage("Pong!"))
-                .subscribe();
-        
-        client.onDisconnect().block();
+        String token = getDiscordToken(discordProperties).orElseThrow();
+    
+        DiscordBot discordBot = new DiscordBot(token);
+        discordBot.start();
     }
     
-    private static GatewayDiscordClient loginToDiscord(Properties discordProperties) {
+    private static Optional<String> getDiscordToken(Properties discordProperties) {
         if (!discordProperties.containsKey(TOKEN_KEY)) {
             System.err.println("""
                     Unable to find a TOKEN in the discord.properties file.
@@ -48,12 +27,7 @@ public class Main {
                     TOKEN=your_bot_token_from_the_discord_developer_portal
                     """);
         }
-        String token = discordProperties.getProperty(TOKEN_KEY);
-        
-        return DiscordClientBuilder.create(token)
-                .build()
-                .login()
-                .block();
+        return Optional.ofNullable(discordProperties.getProperty(TOKEN_KEY));
     }
     
     private static Properties loadDiscordProperties() {
