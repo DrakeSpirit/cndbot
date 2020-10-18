@@ -83,13 +83,67 @@ class DiceRollerTest {
     @Test
     void roll_ShouldReturnRollsOf1to6ResultWhenPostfixIs6() {
         String prefixOne = DiceRoller.MAX_DICE + "d6";
-        
+    
         List<Integer> actual = diceRoller.roll(prefixOne);
-        
+    
         assertThat(actual).allSatisfy(number -> {
             assertThat(number).isGreaterThanOrEqualTo(1);
             assertThat(number).isLessThanOrEqualTo(6);
         });
+    }
+    
+    @Test
+    void roll_ShouldReturnExpectedResultWhenDIsCapitalized() {
+        String capitalD = "1D6";
+        
+        List<Integer> actual = diceRoller.roll(capitalD);
+        
+        assertThat(actual.size()).isEqualTo(1);
+    }
+    
+    @Test
+    void roll_ShouldRollOneDieWhenNoPrefixIsSpecified() {
+        String noPrefix = "d20";
+        
+        List<Integer> actual = diceRoller.roll(noPrefix);
+        
+        assertThat(actual.size()).isEqualTo(1);
+    }
+    
+    @Test
+    void format_ShouldReturnNothingWhenStringIsInvalid() {
+        String invalid = "invalid";
+        
+        String actual = diceRoller.format(invalid);
+        
+        assertThat(actual).isEqualTo("nothing");
+    }
+    
+    @Test
+    void format_ShouldReturnInputWhenStringIsAlreadyCorrectlyFormatted() {
+        String correctlyFormatted = "1d6";
+        
+        String actual = diceRoller.format(correctlyFormatted);
+        
+        assertThat(actual).isEqualTo(correctlyFormatted);
+    }
+    
+    @Test
+    void format_ShouldFormatToLowercaseWhenDIsUppercase() {
+        String capitalD = "1D6";
+        
+        String actual = diceRoller.format(capitalD);
+        
+        assertThat(actual).isEqualTo("1d6");
+    }
+    
+    @Test
+    void format_ShouldPrepend1WhenNoPrefix() {
+        String noPrefix = "d6";
+        
+        String actual = diceRoller.format(noPrefix);
+        
+        assertThat(actual).isEqualTo("1d6");
     }
     
 }
