@@ -30,28 +30,15 @@ public class DiceCommand implements Command {
     }
     
     private String generateRollResponse(String command) {
-        record RollResultPair(String roll, List<Integer> result) {
-        }
-        List<RollResultPair> rollResults = stream(command.split(" "))
-                .skip(1)
-                .map(roll -> new RollResultPair(roll, diceRoller.roll(roll)))
-                .collect(toList());
+        List<DiceRoller.RollResult> rollResults = rollDice(command);
         
-        String response = rollResults.stream()
-                .filter(results -> !results.result.isEmpty())
-                .map(results -> {
-                    String rolls = results.result.stream().map(Object::toString).collect(Collectors.joining(", "));
-                    return "Rolling " + results.roll + " resulted in " + rolls + ".";
-                })
-                .collect(joining("\n"));
+        String response = describeRollResults(rollResults);
         
-        long numberOfRolls = rollResults.stream().mapToLong(results -> results.result.size()).sum();
-        if (numberOfRolls > 1) {
-            int total = rollResults.stream()
-                    .flatMap(results -> results.result.stream())
-                    .mapToInt(Integer::intValue).sum();
+        long totalDiceRolled = rollResults.stream().mapToLong(results -> results.result().size()).sum();
+        if (totalDiceRolled > 1) {
+            int total = sumAllRolls(rollResults);
             response += "\nThe sum of all rolls is " + total + ".";
-        } else if (numberOfRolls == 0) {
+        } else if (totalDiceRolled == 0) {
             response = """
                     There's nothing I can roll in that message.
                     Specify what dice you want me to roll by saying the number of dice, followed by a d, followed by the number of sides on the die.
@@ -60,6 +47,29 @@ public class DiceCommand implements Command {
         }
         
         return response;
+    }
+    
+    private int sumAllRolls(List<DiceRoller.RollResult> rollResults) {
+        return rollResults.stream()
+                .flatMap(results -> results.result().stream())
+                .mapToInt(Integer::intValue).sum();
+    }
+    
+    private String describeRollResults(List<DiceRoller.RollResult> rollResults) {
+        return rollResults.stream()
+                .filter(results -> !results.result().isEmpty())
+                .map(results -> {
+                    String rolls = results.result().stream().map(Object::toString).collect(Collectors.joining(", "));
+                    return "Rolling " + results.roll() + " resulted in " + rolls + ".";
+                })
+                .collect(joining("\n"));
+    }
+    
+    private List<DiceRoller.RollResult> rollDice(String command) {
+        return stream(command.split(" "))
+                .skip(1)
+                .map(diceRoller::performRoll)
+                .collect(toList());
     }
     
 }
